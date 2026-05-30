@@ -176,6 +176,23 @@ body{padding-top:var(--safe-top);padding-bottom:calc(var(--safe-bottom) + 84px)}
 
 <!-- HOME -->
 <div class="view active" id="view-home">
+
+<!-- API KEY BANNER -->
+<div id="apiKeyBanner" style="display:none;margin:12px 16px 0;background:var(--red-dim);border:.5px solid rgba(255,85,85,.25);border-radius:var(--radius);padding:14px 16px">
+  <div style="font-size:13px;color:var(--red);margin-bottom:10px;font-weight:500">⚠️ Brak klucza API — wymagany do działania</div>
+  <div style="font-size:12px;color:var(--muted2);margin-bottom:10px;line-height:1.5">Utwórz klucz na <b style="color:var(--text)">console.anthropic.com</b> → API Keys → Create Key</div>
+  <div style="display:flex;gap:8px">
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;padding:10px 12px;font-size:13px;font-family:'DM Mono',monospace;background:var(--surface2);border:.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);outline:none">
+    <button onclick="saveApiKey()" style="padding:10px 16px;background:var(--accent);color:#0a0a0a;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">Zapisz</button>
+  </div>
+</div>
+
+<!-- API KEY SAVED BAR -->
+<div id="apiKeySavedBar" style="display:none;margin:12px 16px 0;background:var(--accent-dim);border:.5px solid rgba(200,241,53,.2);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+  <span style="font-size:13px;color:var(--accent)">✓ Klucz API zapisany</span>
+  <span onclick="clearApiKey()" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline">Zmień</span>
+</div>
+
 <div class="content">
 
   <div class="section">
@@ -187,6 +204,10 @@ body{padding-top:var(--safe-top);padding-bottom:calc(var(--safe-bottom) + 84px)}
       <div class="pill on" data-v="Bundesliga">Bundesliga</div>
       <div class="pill on" data-v="Ligue 1">Ligue 1</div>
       <div class="pill on" data-v="MLS">MLS</div>
+      <div class="pill on" data-v="Champions League">Liga Mistrzów</div>
+      <div class="pill on" data-v="Europa League">Liga Europy</div>
+      <div class="pill on" data-v="Euro 2024/2025">EURO</div>
+      <div class="pill on" data-v="World Cup / Mundialowe eliminacje">Mundial/Elim.</div>
     </div>
   </div>
 
@@ -371,6 +392,14 @@ async function generate(){
   const customRules=document.getElementById('customRules').value.trim();
   const {from, to, nightMode} = getDateRange();
 
+  const apiKey=getApiKey();
+  if(!apiKey){
+    document.getElementById('apiKeyBanner').style.display='block';
+    document.getElementById('apiKeySavedBar').style.display='none';
+    errBox.textContent='Najpierw wprowadź klucz API Anthropic.';
+    errBox.style.display='block';
+    return;
+  }
   if(!leagues.length){errBox.textContent='Wybierz co najmniej jedną ligę.';errBox.style.display='block';return;}
   errBox.style.display='none';
   couponsWrap.innerHTML='';
@@ -410,6 +439,10 @@ PRIORYTETY ANALIZY:
 3. FORMA — ostatnie 5 meczów.
 4. H2H.
 
+UWAGA: Liga Mistrzów, Liga Europy, EURO i eliminacje do Mundialu to ZAWSZE mecze wysokiej stawki — zawsze je uwzględniaj gdy są dostępne.
+
+ZASADA: Każdy mecz pojawia się TYLKO RAZ — jeden mecz = jeden typ w jednym kuponie. Nigdy ten sam mecz w dwóch kuponach, nigdy dwa typy na jeden mecz.
+
 STRUKTURA KUPONÓW:
 - Kupon 1 PEWNY: 4–5 meczów, kursy 1.35–1.85, łączny ~5–8x
 - Kupon 2 RYZYKOWNY: 3–4 mecze, kursy 1.80–3.50, łączny ~10–20x
@@ -436,9 +469,9 @@ Odpowiedz WYŁĄCZNIE czystym JSON bez żadnego tekstu przed ani po:
       try{
         resp=await fetch('https://api.anthropic.com/v1/messages',{
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
           body:JSON.stringify({
-            model:'claude-sonnet-4-20250514',
+            model:'claude-sonnet-4-6',
             max_tokens:3000,
             system:SYSTEM,
             tools:[{type:'web_search_20250305',name:'web_search'}],
@@ -495,6 +528,34 @@ Odpowiedz WYŁĄCZNIE czystym JSON bez żadnego tekstu przed ani po:
     document.getElementById('btnIco').style.display='';
     document.getElementById('btnTxt').textContent='Generuj ponownie';
     setTimeout(()=>{progressBox.style.display='none';},1200);
+  }
+}
+
+function getApiKey(){
+  return localStorage.getItem('kupon_api_key')||'';
+}
+function saveApiKey(){
+  const val=document.getElementById('apiKeyInput').value.trim();
+  if(!val.startsWith('sk-ant-')){alert('Klucz powinien zaczynać się od sk-ant-');return;}
+  localStorage.setItem('kupon_api_key',val);
+  document.getElementById('apiKeyBanner').style.display='none';
+  document.getElementById('apiKeySavedBar').style.display='flex';
+  document.getElementById('errBox').style.display='none';
+}
+function clearApiKey(){
+  localStorage.removeItem('kupon_api_key');
+  document.getElementById('apiKeyInput').value='';
+  document.getElementById('apiKeyBanner').style.display='block';
+  document.getElementById('apiKeySavedBar').style.display='none';
+}
+function initApiKeyUI(){
+  const key=getApiKey();
+  if(key){
+    document.getElementById('apiKeyBanner').style.display='none';
+    document.getElementById('apiKeySavedBar').style.display='flex';
+  } else {
+    document.getElementById('apiKeyBanner').style.display='block';
+    document.getElementById('apiKeySavedBar').style.display='none';
   }
 }
 
@@ -603,6 +664,7 @@ function toggleHistItem(id){
 }
 
 renderHistory();
+initApiKeyUI();
 </script>
 </body>
 </html>
