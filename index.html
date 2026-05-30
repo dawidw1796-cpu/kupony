@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kupony">
+<title>Kupony AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f0;--muted:#555;--muted2:#888;
+  --accent:#c8f135;--accent-dim:rgba(200,241,53,0.12);
+  --red:#ff5555;--red-dim:rgba(255,85,85,0.1);
+  --amber:#ffb347;--amber-dim:rgba(255,179,71,0.1);
+  --blue:#7eb8ff;--blue-dim:rgba(126,184,255,0.1);
+  --radius:16px;--radius-sm:10px;
+  --safe-top:env(safe-area-inset-top,44px);
+  --safe-bottom:env(safe-area-inset-bottom,20px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100dvh;overflow-x:hidden}
+body{padding-top:var(--safe-top);padding-bottom:calc(var(--safe-bottom) + 84px)}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(10,10,10,0.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:.5px solid var(--border);padding:13px 18px 11px;display:flex;align-items:center;justify-content:space-between}
+.topbar-left{display:flex;align-items:center;gap:9px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pdot 3s ease-in-out infinite}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.app-name{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.app-name span{color:var(--accent)}
+.date-chip{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted2);background:var(--surface);padding:5px 10px;border-radius:20px;border:.5px solid var(--border)}
+
+/* CONTENT */
+.content{padding:0 16px;position:relative;z-index:1}
+.section{margin-top:22px}
+.section-title{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:11px}
+
+/* PILLS */
+.pills-wrap{display:flex;flex-wrap:wrap;gap:7px}
+.pill{font-size:13px;padding:6px 14px;border-radius:20px;border:.5px solid var(--border2);color:var(--muted2);cursor:pointer;transition:all .2s;background:var(--surface);user-select:none;font-weight:400}
+.pill.on{background:var(--accent-dim);border-color:rgba(200,241,53,.3);color:var(--accent);font-weight:500}
+
+/* DATE PICKER */
+.date-picker-wrap{display:flex;flex-direction:column;gap:10px}
+.date-mode-row{display:flex;gap:8px}
+.date-mode-btn{flex:1;padding:9px;font-size:13px;font-weight:500;border-radius:var(--radius-sm);border:.5px solid var(--border2);background:var(--surface);color:var(--muted2);cursor:pointer;text-align:center;transition:all .2s;font-family:'DM Sans',sans-serif}
+.date-mode-btn.active{background:var(--accent-dim);border-color:rgba(200,241,53,.3);color:var(--accent)}
+.date-inputs{display:flex;gap:8px;align-items:center}
+.date-input{flex:1;padding:10px 12px;font-size:14px;font-family:'DM Mono',monospace;background:var(--surface);border:.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;color-scheme:dark}
+.date-input:focus{border-color:rgba(200,241,53,.3)}
+.date-sep{color:var(--muted);font-size:13px;white-space:nowrap}
+.night-toggle{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:.5px solid var(--border)}
+.night-toggle label{font-size:13px;color:var(--muted2);flex:1;cursor:pointer}
+.toggle-sw{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--surface2);border-radius:11px;border:.5px solid var(--border2);cursor:pointer;transition:.2s}
+.toggle-track::after{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:.2s}
+.toggle-sw input:checked+.toggle-track{background:var(--accent-dim);border-color:rgba(200,241,53,.3)}
+.toggle-sw input:checked+.toggle-track::after{left:19px;background:var(--accent)}
+
+/* PRIORITY BOX */
+.rules-card{background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);overflow:hidden}
+.priority-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:.5px solid var(--border)}
+.priority-row:last-child{border-bottom:none}
+.prank{width:22px;height:22px;border-radius:50%;background:var(--surface2);border:.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'DM Mono',monospace;color:var(--accent);flex-shrink:0}
+.ptext{font-size:14px;color:var(--muted2)}
+
+/* TEXTAREA */
+.rules-textarea{width:100%;background:var(--surface);border:.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;resize:none;min-height:72px;outline:none;transition:border-color .2s}
+.rules-textarea:focus{border-color:rgba(200,241,53,.3)}
+.rules-textarea::placeholder{color:var(--muted)}
+
+/* GEN BUTTON */
+.gen-btn{width:100%;padding:17px;background:var(--accent);color:#0a0a0a;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;border:none;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;letter-spacing:-.2px;-webkit-appearance:none;margin-top:22px}
+.gen-btn:active{transform:scale(.98);opacity:.9}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* PROGRESS */
+.progress-box{display:none;background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);padding:18px 16px;margin-top:14px}
+.prog-step{display:flex;align-items:center;gap:12px;padding:7px 0;opacity:.3;transition:opacity .3s}
+.prog-step.active{opacity:1}
+.prog-step.done{opacity:.5}
+.prog-icon{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.prog-step.active .prog-icon{border-color:rgba(200,241,53,.4);background:var(--accent-dim)}
+.prog-step.done .prog-icon{background:rgba(200,241,53,.1);border-color:rgba(200,241,53,.2)}
+.prog-label{font-size:14px;color:var(--text)}
+.prog-step:not(.active):not(.done) .prog-label{color:var(--muted)}
+.mini-loader{width:12px;height:12px;border:1.5px solid rgba(200,241,53,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.mini-loader-dark{width:14px;height:14px;border:2px solid rgba(0,0,0,.2);border-top-color:#0a0a0a;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ERR */
+.err-box{display:none;background:var(--red-dim);border:.5px solid rgba(255,85,85,.2);border-radius:var(--radius);padding:14px 16px;margin-top:14px;font-size:13px;color:var(--red);line-height:1.5}
+
+/* COUPONS */
+.coupons-wrap{margin-top:22px;display:flex;flex-direction:column;gap:14px}
+.coupon-card{background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);overflow:hidden;animation:fadeUp .4s ease both}
+.coupon-card:nth-child(2){animation-delay:.08s}
+.coupon-card:nth-child(3){animation-delay:.16s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.coupon-header{padding:13px 16px;display:flex;align-items:center;gap:10px;border-bottom:.5px solid var(--border)}
+.coupon-icon{font-size:17px}
+.coupon-title{font-size:15px;font-weight:600;flex:1;letter-spacing:-.2px}
+.coupon-odds-badge{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px}
+.badge-green{background:rgba(200,241,53,.12);color:var(--accent);border:.5px solid rgba(200,241,53,.2)}
+.badge-amber{background:var(--amber-dim);color:var(--amber);border:.5px solid rgba(255,179,71,.2)}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border:.5px solid rgba(126,184,255,.2)}
+.match-item{padding:13px 16px;border-bottom:.5px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+.match-item:last-child{border-bottom:none}
+.match-num-league{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px}
+.match-teams{font-size:15px;font-weight:500;color:var(--text);letter-spacing:-.2px;line-height:1.3}
+.match-reason{font-size:13px;color:var(--muted2);margin-top:5px;line-height:1.5}
+.match-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;min-width:70px}
+.match-tip{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--muted2);border:.5px solid var(--border2);white-space:nowrap;font-weight:500;text-align:center}
+.match-odds{font-family:'DM Mono',monospace;font-size:19px;font-weight:500;color:var(--text);line-height:1}
+.match-prob{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.source-note{margin-top:10px;font-size:12px;color:var(--muted);display:flex;align-items:flex-start;gap:6px;line-height:1.5;padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:.5px solid var(--border)}
+.disclaimer{margin-top:16px;text-align:center;font-size:11px;color:var(--muted);line-height:1.6;padding-bottom:4px}
+
+/* HISTORY */
+.history-empty{text-align:center;padding:50px 20px;color:var(--muted);font-size:15px;line-height:1.7}
+.history-empty .big{font-size:38px;margin-bottom:10px}
+.history-item{background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);margin-bottom:10px;overflow:hidden}
+.history-header{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px}
+.history-date{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent)}
+.history-meta{font-size:12px;color:var(--muted)}
+.history-chevron{font-size:16px;color:var(--muted);transition:transform .2s;flex-shrink:0}
+.history-item.open .history-chevron{transform:rotate(180deg)}
+.history-body{display:none;border-top:.5px solid var(--border);padding:14px 16px}
+.history-item.open .history-body{display:block}
+.hist-coupon{margin-bottom:14px}
+.hist-coupon:last-child{margin-bottom:0}
+.hist-coupon-title{font-size:12px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.hist-match{padding:8px 0;border-bottom:.5px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.hist-match:last-child{border-bottom:none}
+.hist-teams{font-size:14px;font-weight:500;color:var(--text)}
+.hist-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.hist-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.hist-tip{font-size:11px;color:var(--muted2);font-family:'DM Mono',monospace}
+.hist-odds{font-size:15px;font-weight:500;color:var(--text);font-family:'DM Mono',monospace}
+.hist-clear{display:flex;justify-content:center;margin-top:14px}
+.clear-btn{font-size:13px;color:var(--red);background:var(--red-dim);border:.5px solid rgba(255,85,85,.2);border-radius:20px;padding:7px 18px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+/* SETTINGS */
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--surface);border-radius:var(--radius);border:.5px solid var(--border);margin-bottom:10px}
+.settings-label{font-size:14px;color:var(--text)}
+.settings-value{font-size:13px;color:var(--muted2);font-family:'DM Mono',monospace}
+.settings-row.block{display:block;line-height:1.6}
+
+/* TABBAR */
+.tabbar{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,10,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:.5px solid var(--border);padding:10px 0 calc(var(--safe-bottom) + 4px);display:flex;justify-content:space-around;z-index:100}
+.tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;cursor:pointer;transition:opacity .2s}
+.tab-icon{font-size:22px;line-height:1}
+.tab-label{font-size:10px;color:var(--muted);font-weight:500}
+.tab-item.active .tab-label{color:var(--accent)}
+
+/* VIEWS */
+.view{display:none}
+.view.active{display:block}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-dot"></div>
+    <div class="app-name">Kupony<span>AI</span></div>
+  </div>
+  <div class="date-chip" id="dateBadge"></div>
+</div>
+
+<!-- HOME -->
+<div class="view active" id="view-home">
+<div class="content">
+
+  <div class="section">
+    <div class="section-title">Ligi</div>
+    <div class="pills-wrap" id="pillsWrap">
+      <div class="pill on" data-v="Premier League">Premier League</div>
+      <div class="pill on" data-v="Serie A">Serie A</div>
+      <div class="pill on" data-v="La Liga">La Liga</div>
+      <div class="pill on" data-v="Bundesliga">Bundesliga</div>
+      <div class="pill on" data-v="Ligue 1">Ligue 1</div>
+      <div class="pill on" data-v="MLS">MLS</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Zakres dat</div>
+    <div class="date-picker-wrap">
+      <div class="date-mode-row">
+        <div class="date-mode-btn active" id="modeToday" onclick="setMode('today')">Dziś</div>
+        <div class="date-mode-btn" id="modeCustom" onclick="setMode('custom')">Konkretna data</div>
+        <div class="date-mode-btn" id="modeRange" onclick="setMode('range')">Zakres</div>
+      </div>
+      <div id="dateInputsWrap" style="display:none">
+        <div class="date-inputs">
+          <input type="date" class="date-input" id="dateFrom">
+          <span class="date-sep" id="dateSepEl" style="display:none">→</span>
+          <input type="date" class="date-input" id="dateTo" style="display:none">
+        </div>
+      </div>
+      <div class="night-toggle">
+        <label for="nightGames">Uwzględnij nocne mecze (np. MLS do 3:00 następnej doby)</label>
+        <label class="toggle-sw">
+          <input type="checkbox" id="nightGames" checked>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Priorytety analizy</div>
+    <div class="rules-card">
+      <div class="priority-row"><span class="prank">1</span><span class="ptext">Stawka meczu — kto gra o co</span></div>
+      <div class="priority-row"><span class="prank">2</span><span class="ptext">Kontuzje, zawieszenia i skład (jeśli ogłoszony)</span></div>
+      <div class="priority-row"><span class="prank">3</span><span class="ptext">Forma ostatnich 5 meczów</span></div>
+      <div class="priority-row"><span class="prank">4</span><span class="ptext">Statystyki H2H</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Dodatkowe zasady</div>
+    <textarea class="rules-textarea" id="customRules" placeholder="Np. nie typuj remisów, unikaj meczu gdy brak kluczowego napastnika..."></textarea>
+  </div>
+
+  <button class="gen-btn" id="genBtn" onclick="generate()">
+    <span id="btnSpinner" style="display:none"><div class="mini-loader-dark"></div></span>
+    <span id="btnIco">⚡</span>
+    <span id="btnTxt">Generuj kupony</span>
+  </button>
+
+  <div class="progress-box" id="progressBox">
+    <div class="prog-step" id="ps1"><div class="prog-icon" id="pi1">🔍</div><span class="prog-label">Szukam meczów w podanym zakresie dat...</span></div>
+    <div class="prog-step" id="ps2"><div class="prog-icon" id="pi2">💶</div><span class="prog-label">Pobieram kursy bukmacherów...</span></div>
+    <div class="prog-step" id="ps3"><div class="prog-icon" id="pi3">🩹</div><span class="prog-label">Sprawdzam składy, kontuzje i zawieszenia...</span></div>
+    <div class="prog-step" id="ps4"><div class="prog-icon" id="pi4">🎯</div><span class="prog-label">Buduję kupony według zasad...</span></div>
+  </div>
+
+  <div class="err-box" id="errBox"></div>
+  <div class="coupons-wrap" id="couponsWrap"></div>
+
+</div>
+</div>
+
+<!-- HISTORY -->
+<div class="view" id="view-history">
+<div class="content">
+  <div class="section">
+    <div class="section-title">Historia kuponów</div>
+    <div class="history-empty" id="histEmpty">
+      <div class="big">📋</div>
+      Wygeneruj swój pierwszy kupon,<br>żeby zobaczyć historię.
+    </div>
+    <div id="historyList"></div>
+    <div class="hist-clear" id="histClearWrap" style="display:none">
+      <div class="clear-btn" onclick="clearHistory()">Wyczyść historię</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- SETTINGS -->
+<div class="view" id="view-settings">
+<div class="content">
+  <div class="section">
+    <div class="section-title">O aplikacji</div>
+    <div class="settings-row"><span class="settings-label">Wersja</span><span class="settings-value">2.0.0</span></div>
+    <div class="settings-row"><span class="settings-label">Model AI</span><span class="settings-value">claude-sonnet-4</span></div>
+    <div class="settings-row"><span class="settings-label">Web Search</span><span class="settings-value">aktywny ✓</span></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Informacja</div>
+    <div class="settings-row block">
+      <p style="font-size:13px;color:var(--muted2)">Aplikacja pomija mecze trwające lub kończące się w ciągu 45 minut. Kursy są orientacyjne — zawsze sprawdzaj aktualne u bukmachera. Graj odpowiedzialnie.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TABBAR -->
+<div class="tabbar">
+  <div class="tab-item active" id="tab-home" onclick="switchTab('home')">
+    <div class="tab-icon">⚽</div>
+    <div class="tab-label">Kupony</div>
+  </div>
+  <div class="tab-item" id="tab-history" onclick="switchTab('history')">
+    <div class="tab-icon">📋</div>
+    <div class="tab-label">Historia</div>
+  </div>
+  <div class="tab-item" id="tab-settings" onclick="switchTab('settings')">
+    <div class="tab-icon">⚙️</div>
+    <div class="tab-label">Info</div>
+  </div>
+</div>
+
+<script>
+const now = new Date();
+const todayISO = now.toISOString().split('T')[0];
+
+document.getElementById('dateBadge').textContent = now.toLocaleDateString('pl-PL',{day:'numeric',month:'short'}).toLowerCase();
+document.getElementById('dateFrom').value = todayISO;
+document.getElementById('dateTo').value = todayISO;
+
+// league pills
+document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>p.classList.toggle('on')));
+
+// tab switching
+function switchTab(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(tb=>tb.classList.remove('active'));
+  document.getElementById('view-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='history') renderHistory();
+}
+
+// date mode
+let dateMode = 'today';
+function setMode(m){
+  dateMode = m;
+  ['today','custom','range'].forEach(x=>document.getElementById('mode'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('active',x===m));
+  const wrap = document.getElementById('dateInputsWrap');
+  const toInput = document.getElementById('dateTo');
+  const sep = document.getElementById('dateSepEl');
+  if(m==='today'){ wrap.style.display='none'; }
+  else if(m==='custom'){ wrap.style.display='block'; toInput.style.display='none'; sep.style.display='none'; }
+  else { wrap.style.display='block'; toInput.style.display='block'; sep.style.display='block'; }
+}
+
+// progress steps
+function setStep(n,state){
+  const ps=document.getElementById('ps'+n), pi=document.getElementById('pi'+n);
+  const icons=['🔍','💶','🩹','🎯'];
+  ps.className='prog-step';
+  if(state==='active'){ps.classList.add('active');pi.innerHTML='<div class="mini-loader"></div>';}
+  else if(state==='done'){ps.classList.add('done');pi.textContent=icons[n-1];}
+}
+
+function getDateRange(){
+  if(dateMode==='today'){
+    const d = new Date();
+    const includeNight = document.getElementById('nightGames').checked;
+    // If night mode, also include next day up to 03:00
+    const nextD = new Date(d);
+    nextD.setDate(nextD.getDate()+1);
+    const from = d.toISOString().split('T')[0];
+    const to = includeNight ? nextD.toISOString().split('T')[0] : from;
+    return {from, to, nightMode: includeNight};
+  } else if(dateMode==='custom'){
+    const f = document.getElementById('dateFrom').value;
+    return {from:f, to:f, nightMode: document.getElementById('nightGames').checked};
+  } else {
+    const f = document.getElementById('dateFrom').value;
+    const t = document.getElementById('dateTo').value||f;
+    return {from:f, to:t, nightMode: document.getElementById('nightGames').checked};
+  }
+}
+
+async function generate(){
+  const btn=document.getElementById('genBtn');
+  const couponsWrap=document.getElementById('couponsWrap');
+  const errBox=document.getElementById('errBox');
+  const progressBox=document.getElementById('progressBox');
+  const leagues=[...document.querySelectorAll('.pill.on')].map(p=>p.dataset.v);
+  const customRules=document.getElementById('customRules').value.trim();
+  const {from, to, nightMode} = getDateRange();
+
+  if(!leagues.length){errBox.textContent='Wybierz co najmniej jedną ligę.';errBox.style.display='block';return;}
+  errBox.style.display='none';
+  couponsWrap.innerHTML='';
+  btn.disabled=true;
+  document.getElementById('btnSpinner').style.display='flex';
+  document.getElementById('btnIco').style.display='none';
+  document.getElementById('btnTxt').textContent='Analizuję...';
+  progressBox.style.display='block';
+  setStep(1,'active');setStep(2,'');setStep(3,'');setStep(4,'');
+
+  const dateLabel = from===to ? from : from+' do '+to;
+  const nowStr = now.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
+
+  const SYSTEM = `Jesteś ekspertem od typowania piłki nożnej. Masz web_search — użyj go kilka razy.
+
+KROKI:
+1. Wyszukaj mecze: "football matches ${from} ${to} ${leagues.join(' ')} flashscore"
+2. Wyszukaj kursy: "football odds ${from} oddsportal betexplorer"  
+3. Wyszukaj kontuzje i ogłoszone składy dla kluczowych meczów
+
+KLUCZOWE ZASADY FILTROWANIA MECZÓW:
+- Aktualny czas to ${nowStr} (strefa czasowa Europa/Warsaw, UTC+2).
+- BEZWZGLĘDNIE POMIŃ mecze które już trwają lub do końca zostało mniej niż 45 minut.
+- POMIŃ mecze które już się zakończyły.
+- Uwzględniaj mecze zaplanowane na dziś ORAZ${nightMode?' mecze nocne do 03:00 następnej doby (np. MLS, Liga amerykańska)':' NIE uwzględniaj meczów nocnych po północy'}.
+- Sprawdź godzinę każdego meczu i policz czy zdąży się on odbyć.
+
+KURSY — WAŻNE:
+- Podaj kursy w formacie dziesiętnym z dokładnością do 2 miejsc (np. 1.65, 2.10, 3.40)
+- Kursy muszą być realistyczne: typ "wygranie faworyta" to zazwyczaj 1.25–1.90, remis 2.80–3.80, outsider 3.00–8.00
+- NIE podawaj kursów poniżej 1.10 ani powyżej 10.00 chyba że to naprawdę duży outsider
+- Staraj się pobierać kursy z Oddsportal lub Betexplorer dla konkretnych meczów
+
+PRIORYTETY ANALIZY:
+1. STAWKA — kto walczy o tytuł/utrzymanie/Europę. Drużyna bez stawki = ryzyko.
+2. KONTUZJE + SKŁAD — jeśli skład ogłoszony: analizuj kluczowych graczy. Brak napastnika/bramkarza = obniż lub pomiń.
+3. FORMA — ostatnie 5 meczów.
+4. H2H.
+
+STRUKTURA KUPONÓW:
+- Kupon 1 PEWNY: 4–5 meczów, kursy 1.35–1.85, łączny ~5–8x
+- Kupon 2 RYZYKOWNY: 3–4 mecze, kursy 1.80–3.50, łączny ~10–20x
+- Kupon 3 BARDZO PEWNY: 5–7 meczów, kursy 1.15–1.55, łączny ~3–5x
+${customRules?'\nDODATKOWE ZASADY UŻYTKOWNIKA:\n'+customRules:''}
+
+Odpowiedz WYŁĄCZNIE czystym JSON bez żadnego tekstu przed ani po:
+{"search_summary":"co znalazłeś, ile meczów, skąd kursy","coupons":[{"id":1,"label":"Pewny","color":"green","estimated_odds":"~5-8x","matches":[{"teams":"A vs B","league":"Liga","time":"20:45","date":"2025-05-25","tip":"A wygra","odds":"1.65","probability":"68%","reason":"Max 2 zdania: stawka + skład/kontuzje"}]},{"id":2,"label":"Ryzykowny","color":"amber","estimated_odds":"~10-20x","matches":[]},{"id":3,"label":"Bardzo pewny","color":"blue","estimated_odds":"~3-5x","matches":[]}]}`;
+
+  const messages=[{role:'user',content:`Zakres dat: ${dateLabel}\nLigi: ${leagues.join(', ')}\nAktualny czas: ${nowStr}\nWyszukaj mecze i kursy, wygeneruj 3 kupony.`}];
+
+  try{
+    setTimeout(()=>{setStep(1,'done');setStep(2,'active');},2000);
+    setTimeout(()=>{setStep(2,'done');setStep(3,'active');},5000);
+    setTimeout(()=>{setStep(3,'done');setStep(4,'active');},8500);
+
+    // Robust agentic loop — obsługuje dowolną liczbę rund tool_use
+    let convMessages=[...messages];
+    let finalText='';
+    const MAX_ROUNDS=8;
+
+    for(let round=0;round<MAX_ROUNDS;round++){
+      let resp, data;
+      try{
+        resp=await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model:'claude-sonnet-4-20250514',
+            max_tokens:3000,
+            system:SYSTEM,
+            tools:[{type:'web_search_20250305',name:'web_search'}],
+            messages:convMessages
+          })
+        });
+        data=await resp.json();
+      }catch(fetchErr){
+        throw new Error('Błąd sieci/fetch: '+fetchErr.message+'. Upewnij się że plik jest otwarty w Safari, nie w podglądzie Claude.');
+      }
+      if(!resp.ok) throw new Error('API HTTP '+resp.status+': '+((data.error&&data.error.message)||JSON.stringify(data).substring(0,150)));
+
+      // Zbierz tekst z tej rundy
+      const textNow=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+      if(textNow) finalText=textNow;
+
+      if(data.stop_reason==='end_turn'||data.stop_reason==='stop_sequence'){
+        break;
+      } else if(data.stop_reason==='tool_use'){
+        const toolUseBlocks=(data.content||[]).filter(b=>b.type==='tool_use');
+        if(!toolUseBlocks.length) break;
+        const toolResults=toolUseBlocks.map(b=>({
+          type:'tool_result',
+          tool_use_id:b.id,
+          content:'Wyniki dostarczone.'+(round>=4?' Teraz wygeneruj TYLKO JSON z kuponami, bez żadnego tekstu.':'')
+        }));
+        convMessages=[...convMessages,{role:'assistant',content:data.content},{role:'user',content:toolResults}];
+      } else {
+        // max_tokens lub inny — weź co mamy
+        break;
+      }
+    }
+
+    setStep(4,'done');
+
+    if(!finalText) throw new Error('Pusta odpowiedź. Rund: '+MAX_ROUNDS+' ostatni stop: brak');
+    const s=finalText.indexOf('{'), e=finalText.lastIndexOf('}');
+    if(s===-1||e===-1) throw new Error('Brak JSON. Odpowiedź: '+finalText.substring(0,300));
+    let parsed;
+    try{parsed=JSON.parse(finalText.substring(s,e+1));}
+    catch(pe){throw new Error('Błąd formatu JSON — spróbuj ponownie');}
+    if(!parsed.coupons||!parsed.coupons.length) throw new Error('Brak kuponów w odpowiedzi — spróbuj ponownie');
+
+    renderCoupons(parsed);
+    saveToHistory({parsed, dateLabel, leagues});
+
+  }catch(err){
+    progressBox.style.display='none';
+    errBox.textContent='Błąd: '+err.message;
+    errBox.style.display='block';
+  }finally{
+    btn.disabled=false;
+    document.getElementById('btnSpinner').style.display='none';
+    document.getElementById('btnIco').style.display='';
+    document.getElementById('btnTxt').textContent='Generuj ponownie';
+    setTimeout(()=>{progressBox.style.display='none';},1200);
+  }
+}
+
+function renderCoupons(parsed){
+  const wrap=document.getElementById('couponsWrap');
+  wrap.innerHTML='';
+  if(parsed.search_summary){
+    const note=document.createElement('div');
+    note.className='source-note';
+    note.innerHTML='<span>ℹ️</span><span>'+parsed.search_summary+'</span>';
+    wrap.appendChild(note);
+  }
+  const cfgs={green:{badge:'badge-green',icon:'🛡️'},amber:{badge:'badge-amber',icon:'🔥'},blue:{badge:'badge-blue',icon:'🔒'}};
+  const labels={1:'pewny',2:'ryzykowny',3:'bardzo pewny'};
+  parsed.coupons.forEach((c,ci)=>{
+    const cfg=cfgs[c.color]||cfgs.blue;
+    const card=document.createElement('div');
+    card.className='coupon-card';
+    card.style.animationDelay=(ci*.08)+'s';
+    const matches=c.matches.map((m,i)=>`
+      <div class="match-item">
+        <div>
+          <div class="match-num-league">${String(i+1).padStart(2,'0')} · ${m.league}${m.time?' · '+m.time:''}${m.date&&m.date!==todayISO?' · '+m.date:''}</div>
+          <div class="match-teams">${m.teams}</div>
+          <div class="match-reason">${m.reason}</div>
+        </div>
+        <div class="match-right">
+          <div class="match-tip">${m.tip}</div>
+          <div class="match-odds">${m.odds||'—'}</div>
+          <div class="match-prob">${m.probability||''}</div>
+        </div>
+      </div>`).join('');
+    card.innerHTML=`<div class="coupon-header"><span class="coupon-icon">${cfg.icon}</span><span class="coupon-title">Kupon ${c.id} — ${labels[c.id]||c.label.toLowerCase()}</span><span class="coupon-odds-badge ${cfg.badge}">${c.estimated_odds}</span></div>${matches}`;
+    wrap.appendChild(card);
+  });
+  const disc=document.createElement('div');
+  disc.className='disclaimer';
+  disc.textContent='Analiza AI · Zawsze graj odpowiedzialnie · Kursy orientacyjne';
+  wrap.appendChild(disc);
+  wrap.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// HISTORY
+function saveToHistory({parsed, dateLabel, leagues}){
+  const list=JSON.parse(localStorage.getItem('kupon_history_v2')||'[]');
+  list.unshift({id:Date.now(), dateLabel, leagues, generated:new Date().toLocaleString('pl-PL'), parsed});
+  if(list.length>30)list.pop();
+  localStorage.setItem('kupon_history_v2',JSON.stringify(list));
+}
+
+function clearHistory(){
+  if(confirm('Wyczyścić całą historię kuponów?')){
+    localStorage.removeItem('kupon_history_v2');
+    renderHistory();
+  }
+}
+
+function renderHistory(){
+  const list=JSON.parse(localStorage.getItem('kupon_history_v2')||'[]');
+  const el=document.getElementById('historyList');
+  const empty=document.getElementById('histEmpty');
+  const clearWrap=document.getElementById('histClearWrap');
+  el.innerHTML='';
+  if(!list.length){empty.style.display='block';clearWrap.style.display='none';return;}
+  empty.style.display='none';
+  clearWrap.style.display='flex';
+
+  list.forEach(entry=>{
+    const totalMatches=(entry.parsed.coupons||[]).reduce((a,c)=>a+(c.matches||[]).length,0);
+    const item=document.createElement('div');
+    item.className='history-item';
+    item.dataset.id=entry.id;
+
+    const couponsHTML=(entry.parsed.coupons||[]).map(c=>{
+      const cfgs={green:'🛡️',amber:'🔥',blue:'🔒'};
+      const matchRows=(c.matches||[]).map(m=>`
+        <div class="hist-match">
+          <div>
+            <div class="hist-teams">${m.teams}</div>
+            <div class="hist-sub">${m.league}${m.time?' · '+m.time:''} · ${m.tip}</div>
+          </div>
+          <div class="hist-right">
+            <div class="hist-odds">${m.odds||'—'}</div>
+            <div class="hist-tip">${m.probability||''}</div>
+          </div>
+        </div>`).join('');
+      return `<div class="hist-coupon"><div class="hist-coupon-title">${cfgs[c.color]||'⚽'} Kupon ${c.id} — ${c.label} · ${c.estimated_odds}</div>${matchRows}</div>`;
+    }).join('');
+
+    item.innerHTML=`
+      <div class="history-header" onclick="toggleHistItem(${entry.id})">
+        <div>
+          <div class="history-date">${entry.dateLabel}</div>
+          <div class="history-meta">Wygenerowano ${entry.generated} · ${totalMatches} typów</div>
+        </div>
+        <div class="history-chevron">⌄</div>
+      </div>
+      <div class="history-body">${couponsHTML}</div>`;
+    el.appendChild(item);
+  });
+}
+
+function toggleHistItem(id){
+  const el=document.querySelector('.history-item[data-id="'+id+'"]');
+  if(el) el.classList.toggle('open');
+}
+
+renderHistory();
+</script>
+</body>
+</html>
