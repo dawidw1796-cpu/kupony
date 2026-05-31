@@ -441,7 +441,10 @@ PRIORYTETY ANALIZY:
 
 UWAGA: Liga Mistrzów, Liga Europy, EURO i eliminacje do Mundialu to ZAWSZE mecze wysokiej stawki — zawsze je uwzględniaj gdy są dostępne.
 
-ZASADA: Każdy mecz pojawia się TYLKO RAZ — jeden mecz = jeden typ w jednym kuponie. Nigdy ten sam mecz w dwóch kuponach, nigdy dwa typy na jeden mecz.
+ZASADY BEZWZGLĘDNIE OBOWIĄZUJĄCE:
+1. DUPLIKATY: Każdy mecz może wystąpić MAKSYMALNIE RAZ w całej odpowiedzi. Przed wygenerowaniem JSON sprawdź czy żaden mecz nie powtarza się między kuponami. Jeśli ten sam mecz jest w kuponie 1 to NIE może być w kuponie 2 ani 3. Nigdy dwa typy na ten sam mecz.
+2. DATY: Uwzględniaj TYLKO mecze z zakresu dat podanego przez użytkownika. Jeśli zakres to jeden dzień to TYLKO mecze z tego dnia. Absolutnie nie dodawaj meczów z innych dni.
+3. JĘZYK: Nazwy drużyn ZAWSZE po polsku (lub oryginalnie jeśli nie ma polskiej nazwy). Przykłady: "Manchester City" nie "Man City", "Real Madryt" nie "Real Madrid", "Barcelona" zostaje, "Bayern Monachium" nie "Bayern Munich", "Juventus" zostaje, "Paris Saint-Germain" lub "PSG".
 
 STRUKTURA KUPONÓW:
 - Kupon 1 PEWNY: 4–5 meczów, kursy 1.35–1.85, łączny ~5–8x
@@ -515,6 +518,21 @@ Odpowiedz WYŁĄCZNIE czystym JSON bez żadnego tekstu przed ani po:
     catch(pe){throw new Error('Błąd formatu JSON — spróbuj ponownie');}
     if(!parsed.coupons||!parsed.coupons.length) throw new Error('Brak kuponów w odpowiedzi — spróbuj ponownie');
 
+    // Usun duplikaty - zabezpieczenie JS
+    const seen = new Set();
+    parsed.coupons.forEach(c=>{
+      c.matches=(c.matches||[]).filter(m=>{
+        const k=m.teams.toLowerCase().replace(/\s+/g,"");
+        if(seen.has(k))return false;
+        seen.add(k);return true;
+      });
+    });
+    // Usun mecze spoza zakresu
+    if(dateMode==="today"){
+      parsed.coupons.forEach(c=>{
+        c.matches=(c.matches||[]).filter(m=>!m.date||m.date===todayISO);
+      });
+    }
     renderCoupons(parsed);
     saveToHistory({parsed, dateLabel, leagues});
 
