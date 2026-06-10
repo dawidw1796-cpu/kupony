@@ -442,9 +442,11 @@ PRIORYTETY ANALIZY:
 UWAGA: Liga Mistrzów, Liga Europy, EURO i eliminacje do Mundialu to ZAWSZE mecze wysokiej stawki — zawsze je uwzględniaj gdy są dostępne.
 
 ZASADY BEZWZGLĘDNIE OBOWIĄZUJĄCE:
-1. DUPLIKATY: Każdy mecz może wystąpić MAKSYMALNIE RAZ w całej odpowiedzi. Przed wygenerowaniem JSON sprawdź czy żaden mecz nie powtarza się między kuponami. Jeśli ten sam mecz jest w kuponie 1 to NIE może być w kuponie 2 ani 3. Nigdy dwa typy na ten sam mecz.
-2. DATY: Uwzględniaj TYLKO mecze z zakresu dat podanego przez użytkownika. Jeśli zakres to jeden dzień to TYLKO mecze z tego dnia. Absolutnie nie dodawaj meczów z innych dni.
-3. JĘZYK: Nazwy drużyn ZAWSZE po polsku (lub oryginalnie jeśli nie ma polskiej nazwy). Przykłady: "Manchester City" nie "Man City", "Real Madryt" nie "Real Madrid", "Barcelona" zostaje, "Bayern Monachium" nie "Bayern Munich", "Juventus" zostaje, "Paris Saint-Germain" lub "PSG".
+1. DUPLIKATY: Każdy mecz występuje MAKSYMALNIE RAZ w całej odpowiedzi. Ten sam mecz nie może być w kuponie 1 i 2 i 3. Nigdy dwa typy na jeden mecz.
+2. DATY: TYLKO mecze z podanego zakresu dat. Absolutnie nie dodawaj meczów z innych dni.
+3. JĘZYK: Nazwy drużyn po polsku: Real Madryt, Bayern Monachium, Juventus, Barcelona, PSG, Manchester City, Liverpool, Arsenal, Chelsea itp.
+4. RYZYKO: Jeśli typ ma prawdopodobieństwo 45-64% lub kurs >2.50 — wstaw go do kuponu 2 (ryzykowny) z polem "warning" opisującym ryzyko. Nie wstawiaj ryzykownych typów do kuponu 1 ani 3.
+5. LICZBA MECZÓW: Kupon 1 może mieć 4-8 meczów, kupon 2 ma 3-5 meczów, kupon 3 może mieć 5-9 meczów.
 
 STRUKTURA KUPONÓW:
 - Kupon 1 PEWNY: 4–5 meczów, kursy 1.35–1.85, łączny ~5–8x
@@ -599,6 +601,7 @@ function renderCoupons(parsed){
           <div class="match-num-league">${String(i+1).padStart(2,'0')} · ${m.league}${m.time?' · '+m.time:''}${m.date&&m.date!==todayISO?' · '+m.date:''}</div>
           <div class="match-teams">${m.teams}</div>
           <div class="match-reason">${m.reason}</div>
+          ${m.warning?'<div style="font-size:11px;color:#633806;background:#FAEEDA;border:.5px solid #FAC775;border-radius:20px;padding:2px 8px;margin-top:4px;display:inline-block">⚠️ '+m.warning+'</div>':''}
         </div>
         <div class="match-right">
           <div class="match-tip">${m.tip}</div>
